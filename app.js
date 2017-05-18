@@ -3,10 +3,10 @@ var app = function () {
   var express = require('express');
   var app = express();
 
-  app.set('views', __dirname + '/views');
+  app.set('views', __dirname + '/views/pages');
   app.engine('html', require('ejs').renderFile);
   app.get('/', function(req, res) {
-    res.render('index.html');
+    res.render('index.ejs');
   });
 
   return app;

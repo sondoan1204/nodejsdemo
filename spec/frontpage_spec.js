@@ -20,11 +20,5 @@ describe("The frontpage", function () {
 
   afterEach(function () { server.close() });
 
-  it("should declare that I've entered the Codeship", function () {
-    expect(browser.text("h1")).toEqual("I've entered the Codeship!");
-  });
 
-  it("should lead to the Codeship", function () {
-    expect(browser.text("a[href='https://www.codeship.io']")).toEqual("codeship.io");
-  });
 });

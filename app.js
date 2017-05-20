@@ -63,6 +63,12 @@ var userEmail = 'leqnam@live.com';
 var userDisplayName = 'CNPM';
 var userDescription = 'Công nghệ phần mềm';
 
+  app.use(express.static(__dirname + '/public'));
+  app.use(express.static(__dirname + '/configs'));
+  app.use(express.static(__dirname + '/controllers'));
+  app.use(express.static(__dirname + '/node_modules'));
+  app.use(express.static(__dirname + '/routers'));  
+//   app.set('views', __dirname + '/views/controllers');
 
 app.set('port', (process.env.PORT || 5000));
 

@@ -1,57 +1,80 @@
-
-var express = require('express'),
-    moment = require('moment'),
-    _ = require('underscore'),
-    path = require('path'),
-    fs = require('fs'),
-    md5 = require('./configs/md5.js'),
-    app = express();
-
-var postsController = require('./controllers/post.js');
-  
-// The information showed about the poster
-var userEmail = 'leqnam@live.com';
-var userDisplayName = 'CNPM';
-var userDescription = 'Công nghệ phần mềm';
+// Setup basic express server
+var express = require('express');
+// var app = express();
+// var server = require('http').createServer(app);
+// var io = require('../..')(server);
 
 
-app.set('port', (process.env.PORT || 5000));
+var app = require('express')();
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
+var port = process.env.PORT || 3000;
 
+server.listen(port, function () {
+  console.log('Server listening at port %d', port);
+});
+
+// Routing
 app.use(express.static(__dirname + '/public'));
 
-// views is directory for all template files
-app.set('views', __dirname + '/views');
-app.set('view engine', 'ejs');
+// Chatroom
 
-app.locals._ = _;
+var numUsers = 0;
 
-app.locals.formatTime = function(time) {
-  return moment(time).format('MMMM Do YYYY, h:mm a');
-};
+io.on('connection', function (socket) {
+  var addedUser = false;
 
-app.locals.hex_md5 = md5.hex_md5;
-app.locals.userEmail = userEmail;
-app.locals.userDisplayName = userDisplayName;
-app.locals.userDescription = userDescription;
+  // when the client emits 'new message', this listens and executes
+  socket.on('new message', function (data) {
+    // we tell the client to execute 'new message'
+    socket.broadcast.emit('new message', {
+      username: socket.username,
+      message: data
+    });
+  });
 
-//app.use('/', postsController);
+  // when the client emits 'add user', this listens and executes
+  socket.on('add user', function (username) {
+    if (addedUser) return;
 
-// dynamically include routes (Controller)
-fs.readdirSync('./controllers').forEach(function (file) {
-  if(file !== 'md5.js') {
-    var api = '/' + file.substr(0, file.lastIndexOf('.'));
-  var url =  require('./controllers/'  + file);
-  app.use(api, url);
-  }
-  
+    // we store the username in the socket session for this client
+    socket.username = username;
+    ++numUsers;
+    addedUser = true;
+    socket.emit('login', {
+      numUsers: numUsers
+    });
+    // echo globally (all clients) that a person has connected
+    socket.broadcast.emit('user joined', {
+      username: socket.username,
+      numUsers: numUsers
+    });
+  });
+
+  // when the client emits 'typing', we broadcast it to others
+  socket.on('typing', function () {
+    socket.broadcast.emit('typing', {
+      username: socket.username
+    });
+  });
+
+  // when the client emits 'stop typing', we broadcast it to others
+  socket.on('stop typing', function () {
+    socket.broadcast.emit('stop typing', {
+      username: socket.username
+    });
+  });
+
+  // when the user disconnects.. perform this
+  socket.on('disconnect', function () {
+    if (addedUser) {
+      --numUsers;
+
+      // echo globally that this client has left
+      socket.broadcast.emit('user left', {
+        username: socket.username,
+        numUsers: numUsers
+      });
+    }
+  });
 });
-
-
-//app.get('/home',postsController.index); Old way
-
-
-app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
-});
-
-
